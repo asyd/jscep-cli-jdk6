@@ -1,10 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
+
 package com.opencsi.jscepcli;
 
+import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -31,25 +31,26 @@ import org.jscep.transaction.Transaction;
  * @author asyd
  */
 public class App {
-    
-    @Parameter(names = "--dn", description = "Subject DN")
-    private String dn;
 
-    /**
-     * @param args the command line arguments
-     */
+    AppParameters params;
+    
+    public void setParams(AppParameters params) {
+        this.params = params;
+    }
+    
     public void scepCLI() throws Exception {
+        
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
         KeyManager km = new KeyManager();
         CertUtil certutil = new CertUtil();
-        
+
         KeyPair kp = km.createRSA();
 
-        X509Certificate cert = certutil.createSelfSignedCertificate(kp, dn);
+        X509Certificate cert = certutil.createSelfSignedCertificate(kp, params.getDn());
 
 
-        CertificationRequest request = certutil.createCertificationRequest(kp, dn, "foo123");
+        CertificationRequest request = certutil.createCertificationRequest(kp, params.getDn(), "foo123");
 
         CallbackHandler handler = new ConsoleCallbackHandler();
 
@@ -76,7 +77,7 @@ public class App {
                 System.out.println("size: " + certs.size());
                 Iterator it = certs.iterator();
                 Integer i = 0;
-                while(it.hasNext()) {
+                while (it.hasNext()) {
                     X509Certificate certificate = (X509Certificate) it.next();
                     saveToFile("/tmp/cert" + i, certificate.getEncoded());
                     i++;
@@ -101,16 +102,20 @@ public class App {
 
     }
 
-    public static void main(String[] args) {
-        // TODO code application logic here
-
+    public static void main(String[] args) throws Exception {
         System.setProperty("javax.net.debug", "none");
-        App main = new App();
+        App app = new App();
+        AppParameters params = new AppParameters();
+        JCommander jcmd = new JCommander(params);
+        
         try {
-            main.scepCLI();
-        } catch (Exception e) {
+            jcmd.parse(args);
+            
+            app.setParams(params);
+            app.scepCLI();
+        } catch (ParameterException e) {
+            jcmd.usage();
         }
-
     }
 
     private static class ConsoleCallbackHandler implements CallbackHandler {
