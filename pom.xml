@@ -20,14 +20,25 @@
         <plugins>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                
+                <version>2.3.2</version>
                 <configuration>
                     <archive>
                         <manifest>
                             <mainClass>com.opencsi.jscepcli.App</mainClass>
-                            <addClasspath>true</addClasspath>
-                            <classpathPrefix>lib</classpathPrefix>
-                            <packageName>toto</packageName>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2.2</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/src.xml</descriptor>
+                    </descriptors>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.opencsi.jscepcli.App</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -50,12 +61,17 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>jscep-api-bc-jdk6</artifactId>
-            <version>1.2</version>
+            <version>1.2.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>jscep-client-bc-jdk6</artifactId>
-            <version>1.2</version>
+            <version>1.2.2-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-ext-jdk16</artifactId>
+            <version>1.46</version>
         </dependency>
     </dependencies>
 </project>

@@ -19,7 +19,7 @@ public class KeyManager {
         
         try {
             kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(keySize);
+            kpg.initialize(keySize.intValue());
             kp = kpg.genKeyPair();
             
         } catch (Exception e) {

@@ -38,6 +38,9 @@ public class AppParameters {
     
     @Parameter(names = "--key-file", description = "Private key output file")
     private String keyFile = "privkey.cer";
+    
+    @Parameter(names = "--ca-identifier", description = "CA identifier")
+    private String caIdentifier = "AdminCA1";
 
     /**
      * @return the dn
@@ -100,5 +103,12 @@ public class AppParameters {
      */
     public String getKeyFile() {
         return keyFile;
+    }
+
+    /**
+     * @return the caIdentiifier
+     */
+    public String getCaIdentifier() {
+        return caIdentifier;
     }
 }
