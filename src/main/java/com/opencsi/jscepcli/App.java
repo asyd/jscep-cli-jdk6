@@ -45,17 +45,17 @@ public class App {
         KeyManager km = new KeyManager();
         CertUtil certutil = new CertUtil();
 
-        KeyPair kp = km.createRSA();
+        KeyPair kp = km.createRSA(params.getKeySize());
 
         X509Certificate cert = certutil.createSelfSignedCertificate(kp, params.getDn());
 
 
-        CertificationRequest request = certutil.createCertificationRequest(kp, params.getDn(), "foo123");
+        CertificationRequest request = certutil.createCertificationRequest(kp, params.getDn(), params.getChallenge());
 
         CallbackHandler handler = new ConsoleCallbackHandler();
 
 
-        URL serverURL = new URL("https://ritsuko.asyd.net:8442/ejbca/publicweb/apply/scep/pkiclient.exe");
+        URL serverURL = new URL(params.getUrl());
 
         try {
             saveToFile("/tmp/csr.der", request.getDEREncoded());

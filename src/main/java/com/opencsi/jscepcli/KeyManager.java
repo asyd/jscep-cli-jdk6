@@ -13,13 +13,13 @@ import java.security.KeyPairGenerator;
  */
 public class KeyManager {
 
-    public KeyPair createRSA() {
+    public KeyPair createRSA(Integer keySize) {
         KeyPairGenerator kpg;
         KeyPair kp = null;
         
         try {
             kpg = KeyPairGenerator.getInstance("RSA");
-            kpg.initialize(1024);
+            kpg.initialize(keySize);
             kp = kpg.genKeyPair();
             
         } catch (Exception e) {
