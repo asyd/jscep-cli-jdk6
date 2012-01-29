@@ -28,16 +28,16 @@ public class AppParameters {
     private String url;
     
     @Parameter(names = "--certificate-file", description = "Certificate output file")
-    private String certificateFile = "cert.der";
+    private String certificateFile = "cert.pem";
     
     @Parameter(names = "--ca-certificate-file", description = "CACert output file")
-    private String caCertificateFile = "cacert.der";
+    private String caCertificateFile = "cacert.pem";
     
     @Parameter(names = "--csr-file", description = "CSR output file")
     private String csrFile;
     
     @Parameter(names = "--key-file", description = "Private key output file")
-    private String keyFile = "privkey.cer";
+    private String keyFile = "privkey.pem";
     
     @Parameter(names = "--ca-identifier", description = "CA identifier")
     private String caIdentifier = "AdminCA1";

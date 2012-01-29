@@ -68,10 +68,5 @@
             <artifactId>jscep-client-bc-jdk6</artifactId>
             <version>1.2.2-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-ext-jdk16</artifactId>
-            <version>1.46</version>
-        </dependency>
     </dependencies>
 </project>
