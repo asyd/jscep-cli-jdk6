@@ -24,7 +24,7 @@ public class AppParameters {
     @Parameter(names = "--challenge", description = "Challenge password (EJBCA entity password)", required=true )
     private String challenge;
     
-    @Parameter(names = "--url", description = "SCEP URL (for EJBCA, use http://<hostname>:<port>//ejbca/publicweb/apply/scep/pkiclient.exe", required=true)
+    @Parameter(names = "--url", description = "SCEP URL. For EJBCA, use http://<hostname>:<port>/ejbca/publicweb/apply/scep/pkiclient.exe", required=true)
     private String url;
     
     @Parameter(names = "--certificate-file", description = "Certificate output file")
@@ -41,6 +41,9 @@ public class AppParameters {
     
     @Parameter(names = "--ca-identifier", description = "CA identifier")
     private String caIdentifier = "AdminCA1";
+    
+    @Parameter(names = "--crl-file", description = "CRL output file")
+    private String crlFile = "crl.pem";
 
     /**
      * @return the dn
@@ -110,5 +113,12 @@ public class AppParameters {
      */
     public String getCaIdentifier() {
         return caIdentifier;
+    }
+
+    /**
+     * @return the crlFile
+     */
+    public String getCrlFile() {
+        return crlFile;
     }
 }

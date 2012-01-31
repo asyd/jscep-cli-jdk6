@@ -1,0 +1,29 @@
+# Build
+
+	git clone 
+	mvn assembly:assembly
+
+# Usage
+
+<pre>
+Usage: [options]
+  Options:
+        --algorithm             BouncyCastle signature algorithm to use
+                                Default: SHA1
+        --ca-certificate-file   CACert output file
+                                Default: cacert.pem
+        --ca-identifier         CA identifier
+                                Default: AdminCA1
+        --certificate-file      Certificate output file
+                                Default: cert.pem
+  *     --challenge             Challenge password (EJBCA entity password)
+        --csr-file              CSR output file
+  *     --dn                    Subject DN to request
+        --key-file              Private key output file
+                                Default: privkey.pem
+        --keySize               Size of key, if you want more than 2048, you
+                                need the JCE
+                                Default: 2048
+  *     --url                   SCEP URL. For EJBCA, use
+                                http://<hostname>:<port>/ejbca/publicweb/apply/scep/pkiclient.exe)
+</pre>

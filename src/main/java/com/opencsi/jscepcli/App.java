@@ -2,9 +2,7 @@ package com.opencsi.jscepcli;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
@@ -12,6 +10,7 @@ import java.security.KeyPair;
 import java.security.Security;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.Collection;
@@ -64,11 +63,13 @@ public class App {
                     params.getCaIdentifier());
 
             client.getCaCertificate();
+            
             EnrolmentTransaction tx = client.enrol(request);
             Transaction.State response = tx.send();
 
             if (response == Transaction.State.CERT_ISSUED) {
                 System.out.println("Certificate issued");
+                saveToPEM(params.getCrlFile(), (X509CRL) client.getRevocationList());
                 saveToPEM(params.getKeyFile(), (RSAPrivateCrtKey) kp.getPrivate());
                 CertStore store = tx.getCertStore();
                 Collection<? extends Certificate> certs = store.getCertificates(null);
