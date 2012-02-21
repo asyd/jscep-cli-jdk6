@@ -33,9 +33,14 @@ import org.jscep.transaction.Transaction;
 public class App {
 
     AppParameters params;
-
+//    KeyPair kp;
+//    CertUtil certutil;
+    
     public void setParams(AppParameters params) {
         this.params = params;
+    }
+    
+    public App() {
     }
 
     public void scepCLI() throws Exception {
