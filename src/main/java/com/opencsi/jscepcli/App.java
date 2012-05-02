@@ -25,6 +25,7 @@ import org.jscep.CertificateVerificationCallback;
 import org.jscep.client.Client;
 import org.jscep.transaction.EnrolmentTransaction;
 import org.jscep.transaction.Transaction;
+import java.util.concurrent.Callable;
 
 /**
  *
@@ -71,6 +72,13 @@ public class App {
             
             EnrolmentTransaction tx = client.enrol(request);
             Transaction.State response = tx.send();
+
+            /* handle asynchronous response */
+            while (response == Transaction.State.CERT_REQ_PENDING) {
+                Callable<State> task = tx.getTask();
+                Thread.currentThread().sleep(300000);
+                task.call();
+            }
 
             if (response == Transaction.State.CERT_ISSUED) {
                 System.out.println("Certificate issued");
