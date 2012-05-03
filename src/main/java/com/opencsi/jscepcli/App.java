@@ -25,7 +25,6 @@ import org.jscep.CertificateVerificationCallback;
 import org.jscep.client.Client;
 import org.jscep.transaction.EnrolmentTransaction;
 import org.jscep.transaction.Transaction;
-import java.util.concurrent.Callable;
 
 /**
  *
@@ -36,11 +35,11 @@ public class App {
     AppParameters params;
 //    KeyPair kp;
 //    CertUtil certutil;
-    
+
     public void setParams(AppParameters params) {
         this.params = params;
     }
-    
+
     public App() {
     }
 
@@ -69,31 +68,42 @@ public class App {
                     params.getCaIdentifier());
 
             client.getCaCertificate();
-            
+
             EnrolmentTransaction tx = client.enrol(request);
             Transaction.State response = tx.send();
 
-            /* handle asynchronous response */
+            /*
+             * handle asynchronous response
+             */
             while (response == Transaction.State.CERT_REQ_PENDING) {
-                Callable<State> task = tx.getTask();
-                Thread.currentThread().sleep(300000);
-                task.call();
+                Thread.currentThread().sleep(1000);
+                System.out.println("CERT_REQ_PENDING, wait 1 second");
+                response = tx.poll();
             }
 
             if (response == Transaction.State.CERT_ISSUED) {
-                System.out.println("Certificate issued");
-                saveToPEM(params.getCrlFile(), (X509CRL) client.getRevocationList());
-                saveToPEM(params.getKeyFile(), (RSAPrivateCrtKey) kp.getPrivate());
-                CertStore store = tx.getCertStore();
-                Collection<? extends Certificate> certs = store.getCertificates(null);
-                Iterator it = certs.iterator();
-                while (it.hasNext()) {
-                    X509Certificate certificate = (X509Certificate) it.next();
-                    if (certificate.getBasicConstraints() != -1) {
-                        saveToPEM(params.getCaCertificateFile(), (X509Certificate) certificate);
-                    } else {
-                        saveToPEM(params.getCertificateFile(), (X509Certificate) certificate);
+                try {
+                    saveToPEM(params.getCrlFile(), (X509CRL) client.getRevocationList());
+                } catch (Exception e) {
+                    System.err.println("Exception while saving CRL");
+                }
+
+                try {
+                    saveToPEM(params.getKeyFile(), (RSAPrivateCrtKey) kp.getPrivate());
+                    CertStore store = tx.getCertStore();
+                    Collection<? extends Certificate> certs = store.getCertificates(null);
+                    Iterator it = certs.iterator();
+                    while (it.hasNext()) {
+                        X509Certificate certificate = (X509Certificate) it.next();
+                        if (certificate.getBasicConstraints() != -1) {
+                            saveToPEM(params.getCaCertificateFile(), (X509Certificate) certificate);
+                        } else {
+                            saveToPEM(params.getCertificateFile(), (X509Certificate) certificate);
+                        }
                     }
+                    System.out.println("Certificate issued");
+                } catch (Exception e) {
+                    System.err.println("Exception while saving files: " + e);
                 }
             } else {
                 System.err.println("Unknow error" + response);
