@@ -38,12 +38,15 @@ public class AppParameters {
     
     @Parameter(names = "--key-file", description = "Private key output file")
     private String keyFile = "privkey.pem";
-    
-    @Parameter(names = "--ca-identifier", description = "CA identifier")
-    private String caIdentifier = "AdminCA1";
-    
+
+    @Parameter(names = "--ca-identifier", description = "CA identifier (try AdminCA1 if using a default EJBCA install)")
+    private String caIdentifier = null; // "AdminCA1";
+
     @Parameter(names = "--crl-file", description = "CRL output file")
     private String crlFile = "crl.pem";
+
+    @Parameter(names = { "-v", "--verbose"}, description = "Verbose output")
+    private boolean verbose = false;
 
     /**
      * @return the dn
@@ -120,5 +123,12 @@ public class AppParameters {
      */
     public String getCrlFile() {
         return crlFile;
+    }
+
+    /**
+     * @return true if we are in verbose mode
+     */
+    public boolean getVerbose() {
+        return verbose;
     }
 }

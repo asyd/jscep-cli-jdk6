@@ -106,10 +106,14 @@ public class App {
                     System.err.println("Exception while saving files: " + e);
                 }
             } else {
-                System.err.println("Unknow error" + response);
+                System.err.println("Unknown error" + response);
             }
         } catch (IOException e) {
-            System.err.print(e.getMessage());
+            if(params.getVerbose()) {
+                e.printStackTrace();
+            }
+
+            System.err.println(e.getMessage());
             if (e.getMessage().contains("400")) {
                 System.err.println(". Probably a template issue, look at PKI log");
             } else if (e.getMessage().contains("404")) {
