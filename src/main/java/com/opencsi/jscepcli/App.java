@@ -27,6 +27,11 @@ import org.jscep.transaction.Transaction;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PatternLayout;
+import org.apache.log4j.varia.NullAppender;
+
 /**
  *
  * @author asyd
@@ -149,6 +154,7 @@ public class App {
 
     public static void main(String[] args) throws Exception {
         System.setProperty("javax.net.debug", "none");
+
         App app = new App();
         AppParameters params = new AppParameters();
         JCommander jcmd = new JCommander(params);
@@ -157,6 +163,15 @@ public class App {
             jcmd.parse(args);
 
             app.setParams(params);
+
+            Logger root = Logger.getRootLogger();
+            if(params.getVerbose()) {
+                root.addAppender(new ConsoleAppender(
+                    new PatternLayout(PatternLayout.TTCC_CONVERSION_PATTERN)));
+            } else {
+                root.addAppender(new NullAppender());
+            }
+
             app.scepCLI();
         } catch (ParameterException e) {
             jcmd.usage();
