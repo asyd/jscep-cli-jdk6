@@ -10,14 +10,16 @@ import java.security.cert.X509Certificate;
 import java.util.Date;
 import javax.security.auth.x500.X500Principal;
 import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.DEREncodable;
-import org.bouncycastle.asn1.DERObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DERPrintableString;
 import org.bouncycastle.asn1.DERSet;
 import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
-import org.bouncycastle.jce.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
@@ -49,19 +51,23 @@ public class CertUtil {
         return certGen.generate(kp.getPrivate(), "BC");
     }
 
-    public CertificationRequest createCertificationRequest(KeyPair kp, String dn, String password) {
-        CertificationRequest request = null;
+    public PKCS10CertificationRequest createCertificationRequest(KeyPair kp, String dn, String password) {
+        PKCS10CertificationRequest request = null;
 
         try {
-            DERObjectIdentifier attrType = PKCSObjectIdentifiers.pkcs_9_at_challengePassword;
-            ASN1Set attrValues = new DERSet(new DERPrintableString(password));
-            DEREncodable passwordAttribute = new Attribute(attrType, attrValues);
-            ASN1Set attributes = new DERSet(passwordAttribute);
+            JcaPKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(dn), kp.getPublic());
+            DERPrintableString passwordDer = new DERPrintableString(password);
+            builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_challengePassword, passwordDer);
+
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA1withRSA");
+            request = builder.build(signerBuilder.build(kp.getPrivate()));
+/*
             request = new PKCS10CertificationRequest("SHA1withRSA",
                     parseDN(dn),
                     kp.getPublic(),
                     attributes,
                     kp.getPrivate());
+*/
 
         } catch (Exception e) {
             System.err.println("Exception:" + e);
