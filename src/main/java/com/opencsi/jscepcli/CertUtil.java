@@ -55,12 +55,9 @@ public class CertUtil {
         PKCS10CertificationRequest request = null;
 
         try {
-            ASN1ObjectIdentifier attrType = PKCSObjectIdentifiers.pkcs_9_at_challengePassword;
-            ASN1Set attrValues = new DERSet(new DERPrintableString(password));
-            ASN1Encodable passwordAttribute = new Attribute(attrType, attrValues);
-            ASN1Set attributes = new DERSet(passwordAttribute);
             JcaPKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(new X500Principal(dn), kp.getPublic());
-            builder.addAttribute(attrType, attributes);
+            DERPrintableString passwordDer = new DERPrintableString(password);
+            builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_challengePassword, passwordDer);
 
             JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA1withRSA");
             request = builder.build(signerBuilder.build(kp.getPrivate()));
