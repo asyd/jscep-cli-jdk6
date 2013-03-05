@@ -3,11 +3,13 @@ package com.opencsi.jscepcli;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.security.KeyPair;
 import java.security.Security;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
+import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.Iterator;
@@ -22,6 +24,7 @@ import org.bouncycastle.openssl.PEMWriter;
 import org.jscep.client.CertificateVerificationCallback;
 import org.jscep.client.Client;
 import org.jscep.client.EnrollmentResponse;
+import org.jscep.transaction.OperationFailureException;
 import org.jscep.transaction.Transaction;
 
 import com.beust.jcommander.JCommander;
@@ -55,30 +58,80 @@ public class App {
         KeyManager km = new KeyManager();
         CertUtil certutil = new CertUtil();
 
+        if(params.getVerbose())
+        {
+            System.err.println("Generating RSA key...");
+        }
         KeyPair kp = km.createRSA(params.getKeySize());
 
         X509Certificate cert = certutil.createSelfSignedCertificate(kp, params.getDn());
-        PKCS10CertificationRequest request = certutil.createCertificationRequest(kp, params.getDn(), params.getChallenge());
+
+        PKCS10CertificationRequest request = certutil.createCertificationRequest(kp,
+                                                                                 params.getDn(),
+                                                                                 params.getChallenge());
+
         CallbackHandler handler = new ConsoleCallbackHandler();
         URL serverURL = new URL(params.getUrl());
 
         try {
+            int seconds = 0;
+
             if (params.getCsrFile() != null) {
                 saveToPEM(params.getCsrFile(), request);
+            }
+            if(params.getText()) {
+                printPEM("PKCS#10 signing request", request);
             }
 
             Client client = new Client(serverURL, handler);
 
-            client.getCaCertificate();
+            CertStore caCertificateStore = client.getCaCertificate(params.getCaIdentifier());
+            Collection <? extends Certificate> caCertificates = caCertificateStore.getCertificates(null);
+            Iterator <? extends Certificate> caCertificatesIterator = caCertificates.iterator();
+            int caCertificateNum = 0;
 
-            EnrollmentResponse response = client.enrol(cert, kp.getPrivate(), request, params.getCaIdentifier());
+            if(caCertificates.size() == 0)
+            {
+                System.err.println("No CA certificates.");
+            }
+            else
+            {
+                System.out.println("Received " + caCertificates.size() + " CA certificate(s).");
+            }
+
+            while(caCertificatesIterator.hasNext())
+            {
+                Certificate c = caCertificatesIterator.next();
+                if(params.getCaCertificateFile() != null)
+                {
+                    saveToPEM(params.getCaCertificateFile(), c);
+                }
+                if(params.getText()) {
+                    caCertificateNum++;
+                    printPEM("CA Certificate " + caCertificateNum, c);
+                }
+            }
+
+
+            if(params.getVerbose())
+            {
+                System.err.println("Starting enrollment request...");
+            }
+
+            EnrollmentResponse response = client.enrol(cert,
+                                                       kp.getPrivate(),
+                                                       request,
+                                                       params.getCaIdentifier());
 
             /*
              * handle asynchronous response
              */
             while (response.isPending()) {
+                seconds++;
+                System.out.println("Enrollment request returned CERT_REQ_PENDING; polling... " +
+                                   "(waited " + seconds + "s)");
                 Thread.currentThread().sleep(1000);
-                System.out.println("CERT_REQ_PENDING, wait 1 second");
+
                 response = client.poll(cert, kp.getPrivate(),
                                        cert.getSubjectX500Principal(),
                                        response.getTransactionId(),
@@ -86,41 +139,75 @@ public class App {
             }
 
             if (response.isSuccess()) {
+                if(params.getVerbose()) {
+                    System.err.println("Enrollment request successful!");
+                }
+
                 X509Certificate clientCertificate = null;
+                int certNum = 0;
 
-                try {
+                if(params.getKeyFile() != null) {
                     saveToPEM(params.getKeyFile(), kp.getPrivate());
-                    CertStore store = response.getCertStore();
-                    Collection<? extends Certificate> certs = store.getCertificates(null);
-                    Iterator it = certs.iterator();
-                    while (it.hasNext()) {
-                        X509Certificate certificate = (X509Certificate) it.next();
-                        if (certificate.getBasicConstraints() != -1) {
-                            saveToPEM(params.getCaCertificateFile(), certificate);
-                        } else {
-                            clientCertificate = certificate;
-                            saveToPEM(params.getCertificateFile(), certificate);
-                        }
-                    }
-                    System.out.println("Certificate issued");
+                }
+                if(params.getText()) {
+                    printPEM("RSA Private Key", kp.getPrivate());
+                }
 
-                    try {
-                        saveToPEM(params.getCrlFile(), client.getRevocationList(clientCertificate,
-                                                                                kp.getPrivate(),
-                                                                                clientCertificate.getIssuerX500Principal(),
-                                                                                clientCertificate.getSerialNumber()));
-                    } catch (Exception e) {
-                        System.err.println("Exception while saving CRL");
-                        if(params.getVerbose()) {
-                            e.printStackTrace();
-                        }
+                CertStore store = response.getCertStore();
+                Collection<? extends Certificate> certs = store.getCertificates(null);
+
+                System.out.println("Received response containing " + certs.size() + " certificate(s).");
+
+                Iterator it = certs.iterator();
+                while (it.hasNext()) {
+                    X509Certificate certificate = (X509Certificate) it.next();
+
+                    certNum++;
+                    if(params.getText())
+                    {
+                        printPEM("Certificate " + certNum, certificate);
                     }
-                } catch (Exception e) {
-                    System.err.println("Exception while saving files: " + e);
-                    if(params.getVerbose()) {
-                        e.printStackTrace();
+
+                    /* Not an intermediate CA certificate */
+                    clientCertificate = certificate;
+                    if(params.getCertificateFile() != null) {
+                        saveToPEM(params.getCertificateFile(), certificate);
                     }
                 }
+                System.out.println("Certificate issued");
+
+                if(params.getText() || params.getCrlFile() != null)
+                {
+                    X509CRL crl;
+
+                    try {
+                        crl = client.getRevocationList(clientCertificate,
+                                                       kp.getPrivate(),
+                                                       clientCertificate.getIssuerX500Principal(),
+                                                       clientCertificate.getSerialNumber());
+
+                        saveToPEM(params.getCrlFile(), crl);
+
+                        if(params.getText() && crl != null) {
+                            printPEM("Certificate Revocation List", crl);
+                        }
+
+                    }
+                    catch(OperationFailureException ofe)
+                    {
+                        System.err.println("Could not retrieve CRL.");
+                        if(params.getVerbose()) {
+                            ofe.printStackTrace();
+                        }
+                    }
+                }
+                else
+                {
+                    if(params.getVerbose()) {
+                        System.err.println("Skipping CRL output (neither a file nor --text was specified)");
+                    }
+                }
+
             } else {
                 System.err.println("Failure response: " + response.getFailInfo());
             }
@@ -146,10 +233,32 @@ public class App {
         }
     }
 
-    public void saveToPEM(String filename, Object data) throws IOException {
-        PEMWriter writer = new PEMWriter(new FileWriter(new File(filename)));
+    public void saveToPEM(String filename, Object data) {
+        if(filename == null) {
+            return;
+        }
+
+        try {
+            PEMWriter writer = new PEMWriter(new FileWriter(new File(filename), true));
+            writer.writeObject(data);
+            writer.close();
+
+        } catch (IOException e) {
+            if(params.getVerbose()) {
+                e.printStackTrace();
+            }
+            System.err.println("Could not save file: " + filename);
+            System.err.println(e.getMessage());
+        }
+    }
+
+    public void printPEM(String title, Object data) throws IOException {
+        System.out.println(title + ":");
+        PEMWriter writer = new PEMWriter(new OutputStreamWriter(System.out));
         writer.writeObject(data);
-        writer.close();
+        writer.flush();
+        System.out.println();
+        System.out.println();
     }
 
     public static void main(String[] args) throws Exception {
