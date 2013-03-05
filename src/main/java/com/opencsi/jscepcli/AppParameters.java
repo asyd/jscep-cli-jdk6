@@ -48,6 +48,9 @@ public class AppParameters {
     @Parameter(names = { "-v", "--verbose"}, description = "Verbose output")
     private boolean verbose = false;
 
+    @Parameter(names = { "-t", "--text"}, description = "Output PEM-format objects on stdout. (similar to 'openssl <cmd> -text')")
+    private boolean text = false;
+
     /**
      * @return the dn
      */
@@ -131,4 +134,12 @@ public class AppParameters {
     public boolean getVerbose() {
         return verbose;
     }
+
+    /**
+     * @return true if we should output PEM text
+     */
+    public boolean getText() {
+        return text;
+    }
+
 }
