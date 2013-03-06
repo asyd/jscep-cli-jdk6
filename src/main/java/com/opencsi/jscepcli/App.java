@@ -184,7 +184,8 @@ public class App {
                         crl = client.getRevocationList(clientCertificate,
                                                        kp.getPrivate(),
                                                        clientCertificate.getIssuerX500Principal(),
-                                                       clientCertificate.getSerialNumber());
+                                                       clientCertificate.getSerialNumber(),
+                                                       params.getCaIdentifier());
 
                         saveToPEM(params.getCrlFile(), crl);
 
