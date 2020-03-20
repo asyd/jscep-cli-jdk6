@@ -3,13 +3,13 @@
 ```bash
 $ git clone git://github.com/asyd/jscep-cli-jdk6.git
 $ cd jscep-cli-jdk6
-$ mvn assembly:assembly
+$ mvn package
 ```
 
 # Usage
 
 ```bash
-$ java -jar target/jscepcli-1.0-SNAPSHOT-exe.jar
+$ java -jar target/jscepcli-1.2-SNAPSHOT-jar-with-dependencies.jar
 Usage: <main class> [options]
   Options:
         --algorithm             BouncyCastle signature algorithm to use
