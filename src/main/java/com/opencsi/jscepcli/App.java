@@ -54,10 +54,7 @@ public class App {
         KeyManager km = new KeyManager();
         CertUtil certutil = new CertUtil();
 
-        if(params.getVerbose())
-        {
-            System.err.println("Generating RSA key...");
-        }
+        System.out.println("Generating RSA key (" + params.getKeySize() + " bit)...");
         KeyPair kp = km.createRSA(params.getKeySize());
 
         X509Certificate cert = certutil.createSelfSignedCertificate(kp, params.getDn());
@@ -81,6 +78,7 @@ public class App {
 
             Client client = new Client(serverURL, handler);
 
+            System.out.println("Getting CA certificates for CA Identifier '" + params.getCaIdentifier() + "'...");
             CertStore caCertificateStore = client.getCaCertificate(params.getCaIdentifier());
             Collection <? extends Certificate> caCertificates = caCertificateStore.getCertificates(null);
             Iterator <? extends Certificate> caCertificatesIterator = caCertificates.iterator();
@@ -88,7 +86,7 @@ public class App {
 
             if(caCertificates.size() == 0)
             {
-                System.err.println("No CA certificates.");
+                System.out.println("No CA certificates received.");
             }
             else
             {
@@ -107,12 +105,8 @@ public class App {
                     printPEM("CA Certificate " + caCertificateNum, c);
                 }
             }
-
-
-            if(params.getVerbose())
-            {
-                System.err.println("Starting enrollment request...");
-            }
+            
+            System.out.println("Starting enrollment request for CA Identifier '" + params.getCaIdentifier() + "'...");
 
             EnrollmentResponse response = client.enrol(cert,
                                                        kp.getPrivate(),
@@ -135,9 +129,7 @@ public class App {
             }
 
             if (response.isSuccess()) {
-                if(params.getVerbose()) {
-                    System.err.println("Enrollment request successful!");
-                }
+                System.out.println("Enrollment request successful!");
 
                 X509Certificate clientCertificate = null;
                 int certNum = 0;
@@ -170,7 +162,7 @@ public class App {
                         saveToPEM(params.getCertificateFile(), certificate);
                     }
                 }
-                System.out.println("Certificate issued");
+                System.out.println("Certificate issued for subject DN: " + clientCertificate.getSubjectDN().getName());
 
                 if(params.getText() || params.getCrlFile() != null)
                 {
