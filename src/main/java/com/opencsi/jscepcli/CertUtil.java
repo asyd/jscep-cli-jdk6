@@ -4,23 +4,26 @@
  */
 package com.opencsi.jscepcli;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigInteger;
 import java.security.KeyPair;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Date;
+
 import javax.security.auth.x500.X500Principal;
-import org.bouncycastle.asn1.ASN1Set;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+
 import org.bouncycastle.asn1.DERPrintableString;
-import org.bouncycastle.asn1.DERSet;
-import org.bouncycastle.asn1.pkcs.Attribute;
-import org.bouncycastle.asn1.pkcs.CertificationRequest;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequestBuilder;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.bouncycastle.x509.X509V3CertificateGenerator;
 
 /**
  *
@@ -35,20 +38,12 @@ public class CertUtil {
         Date now = new Date();
         BigInteger serial = new BigInteger("1");
 
-        X500Principal principal = new X500Principal(dn);
-
-        X509V3CertificateGenerator certGen = new X509V3CertificateGenerator();
-
-        certGen.setIssuerDN(principal);
-        certGen.setSubjectDN(principal);
-        certGen.setSerialNumber(serial);
-        certGen.setNotBefore(now);
-        certGen.setNotAfter(now);
-        certGen.setPublicKey(kp.getPublic());
-        certGen.setSignatureAlgorithm("SHA1withRSA");
-
-
-        return certGen.generate(kp.getPrivate(), "BC");
+        X500Name principal = new X500Name(dn);
+        SubjectPublicKeyInfo spki = SubjectPublicKeyInfo.getInstance(kp.getPublic().getEncoded());
+        final X509v3CertificateBuilder certbuilder = new X509v3CertificateBuilder(principal, serial, now, now, principal, spki);
+        final ContentSigner signer = new JcaContentSignerBuilder("SHA256WithRSA").setProvider(new BouncyCastleProvider()).build(kp.getPrivate());
+        final X509CertificateHolder certHolder = certbuilder.build(signer);
+        return (X509Certificate) CertificateFactory.getInstance("X.509", new BouncyCastleProvider()).generateCertificate(new ByteArrayInputStream(certHolder.getEncoded()));      
     }
 
     public PKCS10CertificationRequest createCertificationRequest(KeyPair kp, String dn, String password) {
@@ -59,16 +54,8 @@ public class CertUtil {
             DERPrintableString passwordDer = new DERPrintableString(password);
             builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_challengePassword, passwordDer);
 
-            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA1withRSA");
+            JcaContentSignerBuilder signerBuilder = new JcaContentSignerBuilder("SHA256WithRSA");
             request = builder.build(signerBuilder.build(kp.getPrivate()));
-/*
-            request = new PKCS10CertificationRequest("SHA1withRSA",
-                    parseDN(dn),
-                    kp.getPublic(),
-                    attributes,
-                    kp.getPrivate());
-*/
-
         } catch (Exception e) {
             System.err.println("Exception:" + e);
         }

@@ -18,15 +18,6 @@ import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
-import org.bouncycastle.asn1.pkcs.CertificationRequest;
-import org.bouncycastle.pkcs.PKCS10CertificationRequest;
-import org.bouncycastle.openssl.PEMWriter;
-import org.jscep.client.CertificateVerificationCallback;
-import org.jscep.client.Client;
-import org.jscep.client.EnrollmentResponse;
-import org.jscep.transaction.OperationFailureException;
-import org.jscep.transaction.Transaction;
-
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 
@@ -34,6 +25,13 @@ import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.NullAppender;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
+import org.jscep.client.CertificateVerificationCallback;
+import org.jscep.client.Client;
+import org.jscep.client.EnrollmentResponse;
+import org.jscep.transaction.OperationFailureException;
 
 /**
  *
@@ -42,8 +40,6 @@ import org.apache.log4j.varia.NullAppender;
 public class App {
 
     AppParameters params;
-//    KeyPair kp;
-//    CertUtil certutil;
 
     public void setParams(AppParameters params) {
         this.params = params;
@@ -53,7 +49,7 @@ public class App {
     }
 
     public void scepCLI() throws Exception {
-        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+        Security.addProvider(new BouncyCastleProvider());
 
         KeyManager km = new KeyManager();
         CertUtil certutil = new CertUtil();
@@ -130,7 +126,7 @@ public class App {
                 seconds++;
                 System.out.println("Enrollment request returned CERT_REQ_PENDING; polling... " +
                                    "(waited " + seconds + "s)");
-                Thread.currentThread().sleep(1000);
+                Thread.sleep(1000);
 
                 response = client.poll(cert, kp.getPrivate(),
                                        cert.getSubjectX500Principal(),
@@ -158,7 +154,7 @@ public class App {
 
                 System.out.println("Received response containing " + certs.size() + " certificate(s).");
 
-                Iterator it = certs.iterator();
+                Iterator<? extends Certificate> it = certs.iterator();
                 while (it.hasNext()) {
                     X509Certificate certificate = (X509Certificate) it.next();
 
@@ -234,32 +230,42 @@ public class App {
         }
     }
 
-    public void saveToPEM(String filename, Object data) {
+    public void saveToPEM(String filename, Object data) throws IOException {
         if(filename == null) {
             return;
         }
-
+        JcaPEMWriter writer = null;
         try {
-            PEMWriter writer = new PEMWriter(new FileWriter(new File(filename), true));
+            writer = new JcaPEMWriter(new FileWriter(new File(filename), true));
             writer.writeObject(data);
             writer.close();
-
         } catch (IOException e) {
             if(params.getVerbose()) {
                 e.printStackTrace();
             }
             System.err.println("Could not save file: " + filename);
             System.err.println(e.getMessage());
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
         }
     }
 
     public void printPEM(String title, Object data) throws IOException {
         System.out.println(title + ":");
-        PEMWriter writer = new PEMWriter(new OutputStreamWriter(System.out));
-        writer.writeObject(data);
-        writer.flush();
-        System.out.println();
-        System.out.println();
+        JcaPEMWriter writer = null;
+        try {
+            writer = new JcaPEMWriter(new OutputStreamWriter(System.out));
+            writer.writeObject(data);
+            writer.flush();
+            System.out.println();
+            System.out.println();
+        } finally {
+            if (writer != null) {
+                writer.close();
+            }
+        }
     }
 
     public static void main(String[] args) throws Exception {
