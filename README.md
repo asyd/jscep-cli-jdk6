@@ -9,7 +9,7 @@ $ mvn package
 # Usage
 
 ```bash
-$ java -jar target/jscepcli-1.2-SNAPSHOT-jar-with-dependencies.jar
+$ java -jar target/jscepcli-1.3-SNAPSHOT-jar-with-dependencies.jar
 Usage: <main class> [options]
   Options:
         --algorithm             BouncyCastle signature algorithm to use
