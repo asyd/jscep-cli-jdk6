@@ -1,14 +1,19 @@
 package com.opencsi.jscepcli;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.Security;
 import java.security.cert.CertStore;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
 import java.util.Collection;
@@ -26,6 +31,9 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.varia.NullAppender;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.PEMKeyPair;
+import org.bouncycastle.openssl.PEMParser;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.jscep.client.CertificateVerificationCallback;
@@ -57,7 +65,29 @@ public class App {
         System.out.println("Generating RSA key (" + params.getKeySize() + " bit)...");
         KeyPair kp = km.createRSA(params.getKeySize());
 
-        X509Certificate cert = certutil.createSelfSignedCertificate(kp, params.getDn());
+        final PrivateKey privKey;
+        if (params.getKeyInputFile() != null) {
+            System.out.println("Reading existing private key from " + params.getKeyInputFile() + "...");
+            try (FileReader keyReader = new FileReader(params.getKeyInputFile())) {
+                try (PEMParser pemParser = new PEMParser(keyReader)) {
+                    JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
+                    PEMKeyPair pemkey = (PEMKeyPair)pemParser.readObject();
+                    privKey = converter.getPrivateKey(pemkey.getPrivateKeyInfo());
+                }
+            }
+        } else {
+            privKey = kp.getPrivate();
+        }
+        
+        final X509Certificate cert;
+        if (params.getCertInputFile() != null) {
+            System.out.println("Reading existing certificate from " + params.getCertInputFile() + "...");
+            final InputStream inStrm = new FileInputStream(params.getCertInputFile());
+            final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            cert = (X509Certificate) cf.generateCertificate(inStrm);      
+        } else {
+            cert = certutil.createSelfSignedCertificate(kp, params.getDn());
+        }
 
         PKCS10CertificationRequest request = certutil.createCertificationRequest(kp,
                                                                                  params.getDn(),
@@ -109,7 +139,7 @@ public class App {
             System.out.println("Starting enrollment request for CA Identifier '" + params.getCaIdentifier() + "'...");
 
             EnrollmentResponse response = client.enrol(cert,
-                                                       kp.getPrivate(),
+                                                       privKey,
                                                        request,
                                                        params.getCaIdentifier());
 
@@ -122,7 +152,7 @@ public class App {
                                    "(waited " + seconds + "s)");
                 Thread.sleep(1000);
 
-                response = client.poll(cert, kp.getPrivate(),
+                response = client.poll(cert, privKey,
                                        cert.getSubjectX500Principal(),
                                        response.getTransactionId(),
                                        params.getCaIdentifier());
