@@ -21,7 +21,7 @@ public class AppParameters {
     @Parameter(names = "--algorithm", description = "BouncyCastle signature algorithm to use")
     private String algorithm = "SHA1";
 
-    @Parameter(names = "--challenge", description = "Challenge password (EJBCA entity password)", required=true )
+    @Parameter(names = "--challenge", description = "Challenge password (EJBCA entity password)")
     private String challenge;
 
     @Parameter(names = "--url", description = "SCEP URL. For EJBCA, use http://<hostname>:<port>/ejbca/publicweb/apply/scep/pkiclient.exe", required=true)
@@ -38,6 +38,12 @@ public class AppParameters {
 
     @Parameter(names = "--key-file", description = "Private key output file")
     private String keyFile = "privkey.pem";
+
+    @Parameter(names = "--key-input-file", description = "Private key input file for PKCSReq protedtion, instead of using a generated")
+    private String keyInputFile;
+
+    @Parameter(names = "--cert-input-file", description = "Certificate input file for PKCSReq protedtion, instead of using a generated self-signed")
+    private String certInputFile;
 
     @Parameter(names = "--ca-identifier", description = "CA identifier (try AdminCA1 if using a default EJBCA install)")
     private String caIdentifier = null; // "AdminCA1";
@@ -112,6 +118,20 @@ public class AppParameters {
      */
     public String getKeyFile() {
         return keyFile;
+    }
+
+    /**
+     * @return the keyInputFile
+     */
+    public String getKeyInputFile() {
+        return keyInputFile;
+    }
+
+    /**
+     * @return the certInputFile
+     */
+    public String getCertInputFile() {
+        return certInputFile;
     }
 
     /**
